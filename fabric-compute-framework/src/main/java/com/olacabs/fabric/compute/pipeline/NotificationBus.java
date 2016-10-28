@@ -26,18 +26,18 @@ import com.olacabs.fabric.compute.source.PipelineStreamSource;
 import com.olacabs.fabric.compute.tracking.SimpleBitSet;
 import com.olacabs.fabric.model.event.EventSet;
 import lombok.Builder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
 /**
- *TODO Add more.
+ * The backbone for fabric. The notification bus is used to connect all the components together, transfer message
+ * from one component to another and acking messages.
  */
+@Slf4j
 public class NotificationBus {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationBus.class);
     private final Map<Long, SimpleBitSet> tracker = Maps.newConcurrentMap();
     private Properties properties;
     private Map<Integer, Connection> connections = Maps.newHashMap();
@@ -46,7 +46,7 @@ public class NotificationBus {
 
     public NotificationBus(final Properties properties) {
         this.properties = properties;
-        LOGGER.info("Notification bus created...");
+        log.info("Notification bus created...");
     }
 
     public NotificationBus source(PipelineStreamSource streamSource) {
@@ -71,10 +71,29 @@ public class NotificationBus {
         return this;
     }
 
+    /**
+     * Publish a message to a bus. Any userspace message will be forwarded to the next component. If not other component
+     * is connected to the publisher, the message will be acked.
+     * @param message The message to be forwarded
+     * @param from The component that is publishing the message
+     */
     public synchronized void publish(PipelineMessage message, int from) {
         publish(message, from, true);
     }
 
+    /**
+     * Publish a message to a bus. Any userspace message will be forwarded to the next component depending on
+     * the forward flag. Typically when message is delivered to a
+     * {@link com.olacabs.fabric.compute.processor.ScheduledProcessor}, it will not be forwarded to the next components.
+     * This is because the
+     * {@link com.olacabs.fabric.compute.processor.ScheduledProcessor#consume(ProcessingContext, EventSet)}
+     * method does not return an eventset. If not other component is connected to the publisher, the message will be
+     * acked.
+     *
+     * @param message The message to be published
+     * @param from The component that is publishing the message
+     * @param forward If the message will be dlivered to downstream components
+     */
     public synchronized void publish(PipelineMessage message, int from, boolean forward) {
         switch (message.getMessageType()) {
             case TIMER:
@@ -106,12 +125,12 @@ public class NotificationBus {
                         // for each of the receivers based on the auto incremented id assigned to them
                         if (forward
                             && connections.containsKey(from)
-                            && ((comms.containsKey(from) && comms.get(from).pipelineStage.sendsNormalMessage())
-                            || !comms.containsKey(from))) {
-                            connections.get(from).pipelineStages.stream().forEach(msgBitSet::set);
+                            && (!comms.containsKey(from)
+                                || comms.get(from).pipelineStage.sendsNormalMessage())) {
+                            connections.get(from).pipelineStages.forEach(msgBitSet::set);
                         }
                     } catch (Exception e) {
-                        LOGGER.error("Error setting tracking bits for generator: {}", from, e);
+                        log.error("Error setting tracking bits for generator: " + Integer.toString(from), e);
                     }
 
                     // unset the bit corresponding to the sender
@@ -125,18 +144,17 @@ public class NotificationBus {
                 try {
                     // publish the message to each of the receivers
                     if (forward && connections.containsKey(from)) {
-                        connections.get(from).pipelineStages.stream()
+                        connections.get(from).pipelineStages
                                 .forEach(pipeLineStage -> comms.get(pipeLineStage).commsChannel.publish(message));
                     }
                 } catch (Throwable t) {
-                    LOGGER.error("Error sending event to children for {}", from, t);
+                    log.error("Error sending event to children for " + Integer.toString(from), t);
                 }
                 // event sets which are eligible for ACKing
                 ImmutableSet<EventSet> ackSet = ackCandidatesBuilder.build();
 
                 // ACK all the event sets
-                ackSet.stream()
-                    .forEach(eventSet -> sources.get(eventSet.getSourceId()).ackMessage(eventSet));
+                ackSet.forEach(eventSet -> sources.get(eventSet.getSourceId()).ackMessage(eventSet));
                 // No event set to ACK, hence we can remove the tracker entry for this event set
                 if (!ackSet.isEmpty()) {
                     tracker.remove(actionableMessage.getMessages().getId());
@@ -150,15 +168,24 @@ public class NotificationBus {
 
     }
 
+    /**
+     * Start the notification bus.
+     */
     public void start() {
         connections = ImmutableMap.copyOf(connections);
         comms.values().forEach(communicator -> communicator.commsChannel.start());
     }
 
+    /**
+     * Stop the notification bus. Essentially all message transfers will stop.
+     */
     public void stop() {
         comms.values().forEach(communicator -> communicator.commsChannel.stop());
     }
 
+    /**
+     * Represents a connection between one component and the other.
+     */
     private static class Connection {
         private final Set<Integer> pipelineStages;
 
@@ -174,7 +201,7 @@ public class NotificationBus {
 
 
     /**
-     * TODO javadoc.
+     * Communication channel metadata.
      */
     @Builder
     public static class Communicator {
