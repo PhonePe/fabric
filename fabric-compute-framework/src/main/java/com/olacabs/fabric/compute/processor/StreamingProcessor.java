@@ -20,8 +20,7 @@ import com.olacabs.fabric.compute.EventCollector;
 import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.model.event.Event;
 import com.olacabs.fabric.model.event.EventSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,8 +28,8 @@ import java.util.List;
 /**
  * TODO javadoc.
  */
+@Slf4j
 public abstract class StreamingProcessor extends ProcessorBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StreamingProcessor.class);
 
     public StreamingProcessor() {
         super(false);
@@ -47,7 +46,7 @@ public abstract class StreamingProcessor extends ProcessorBase {
 
     @Override
     public final List<Event> timeTriggerHandler(ProcessingContext context) {
-        LOGGER.warn("timeTriggerHandler() called on StreamingProcessor: " + getId());
+        log.warn("timeTriggerHandler() called on StreamingProcessor: " + getId());
         return Collections.emptyList();
     }
 }

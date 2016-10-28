@@ -57,9 +57,9 @@
 
     <scm>
         <!-- TODO Update the SCM to open-source github-->
-        <connection>scm:git:ssh://git@gitlab.corp.olacabs.com:2222/dataplatform/fabric.git</connection>
-        <url>scm:git:ssh://git@gitlab.corp.olacabs.com:2222/dataplatform/fabric.git</url>
-        <developerConnection>scm:git:https://gitlab.corp.olacabs.com/dataplatform/fabric.git
+        <connection>scm:git:ssh://github.com/olacabs/fabric.git</connection>
+        <url>scm:git:ssh://git@github.com/olacabs/fabric.git</url>
+        <developerConnection>scm:git:https://github.com/olacabs/fabric.git
         </developerConnection>
         <tag>HEAD</tag>
     </scm>

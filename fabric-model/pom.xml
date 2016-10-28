@@ -27,7 +27,7 @@
     <artifactId>fabric-model</artifactId>
 
     <properties>
-        <jackson-annotations.version>2.5.1</jackson-annotations.version>
+        <jackson-annotations.version>2.7.4</jackson-annotations.version>
         <validation.version>1.0.0.GA</validation.version>
         <hibernate-validator.version>5.2.3.Final</hibernate-validator.version>
     </properties>

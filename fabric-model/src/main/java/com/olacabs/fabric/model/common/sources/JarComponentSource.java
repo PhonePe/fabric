@@ -21,11 +21,13 @@ import com.olacabs.fabric.model.common.ComponentSourceType;
 import com.olacabs.fabric.model.common.ComponentSourceVisitor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * TODO Add more.
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class JarComponentSource extends ComponentSource {
     private String url;
 

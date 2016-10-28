@@ -31,7 +31,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lombok.version>1.16.6</lombok.version>
         <junit.version>4.12</junit.version>
-        <jackson.version>2.5.1</jackson.version>
+        <jackson.version>2.7.4</jackson.version>
         <kafka.version>0.8.2.2</kafka.version>
         <mockito.version>1.10.19</mockito.version>
     </properties>
