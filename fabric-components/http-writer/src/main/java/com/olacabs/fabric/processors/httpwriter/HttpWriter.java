@@ -88,7 +88,6 @@ public class HttpWriter extends StreamingProcessor {
 
     private static final int DEFAULT_POOL_SIZE = 10;
     private int poolSize;
-    private ObjectMapper mapper;
     private String headerString;
     private PoolingHttpClientConnectionManager manager;
     private String endPointUrl;
@@ -119,7 +118,7 @@ public class HttpWriter extends StreamingProcessor {
     /**
      * Stop the HttpClient and Manager.
      *
-     * @throws IOException
+     * @throws IOException If client could not be stopped.
      */
     private void stop() throws IOException {
         client.close();
@@ -129,10 +128,11 @@ public class HttpWriter extends StreamingProcessor {
     @Override
     protected EventSet consume(ProcessingContext processingContext, EventSet eventSet) throws ProcessingException {
         log.debug("Method - {}", this.getHttpMethod().toLowerCase());
-        return this.handleRequest(eventSet, this.getHttpMethod().toLowerCase());
+        return this.handleRequest(processingContext.getMapper(), eventSet, this.getHttpMethod().toLowerCase());
     }
 
-    private EventSet handleRequest(EventSet eventSet, String httpMethodType) throws ProcessingException {
+    private EventSet handleRequest(
+            ObjectMapper mapper, EventSet eventSet, String httpMethodType) throws ProcessingException {
         ImmutableList.Builder<Object> builder = ImmutableList.builder();
         EventSet.EventFromEventBuilder eventSetBuilder = EventSet.eventFromEventBuilder();
         HttpRequestBase request = null;
@@ -172,7 +172,7 @@ public class HttpWriter extends StreamingProcessor {
                     handleResponse(response);
                     if (shouldPublishResponse) {
                         Event e = Event.builder()
-                            .jsonNode(getMapper().convertValue(createResponseMap(event, response, httpMethodType),
+                            .jsonNode(mapper.convertValue(createResponseMap(mapper, event, response, httpMethodType),
                                 JsonNode.class))
                             .build();
                         e.setProperties(event.getProperties());
@@ -195,8 +195,8 @@ public class HttpWriter extends StreamingProcessor {
             try {
                 log.debug("Making Bulk call as bulk is supported");
                 if (entityEnclosable) {
-                    ((HttpEntityEnclosingRequest) request).setEntity(new ByteArrayEntity(getMapper()
-                        .writeValueAsBytes(builder.build())));
+                    ((HttpEntityEnclosingRequest) request).setEntity(
+                            new ByteArrayEntity(mapper.writeValueAsBytes(builder.build())));
                 }
                 response = client.execute(request);
                 handleResponse(response);
@@ -224,14 +224,12 @@ public class HttpWriter extends StreamingProcessor {
     }
 
     private HttpPut createHttpPut() {
-        HttpPut put = new HttpPut(this.getEndPointUrl());
-        return put;
+        return new HttpPut(this.getEndPointUrl());
     }
 
 
     private HttpGet createHttpGet() {
-        HttpGet get = new HttpGet(this.getEndPointUrl());
-        return get;
+        return new HttpGet(this.getEndPointUrl());
     }
 
 
@@ -247,8 +245,7 @@ public class HttpWriter extends StreamingProcessor {
 
     private HttpPost createHttpPost() {
         log.debug("Creating http post request");
-        HttpPost post = new HttpPost(this.getEndPointUrl());
-        return post;
+        return new HttpPost(this.getEndPointUrl());
     }
 
     @Override public void initialize(String instanceId, Properties globalProperties, Properties properties,
@@ -262,12 +259,12 @@ public class HttpWriter extends StreamingProcessor {
         this.shouldPublishResponse = ComponentPropertyReader
                 .readBoolean(properties, globalProperties, "should_publish_response", instanceId, componentMetadata,
                         false);
-        this.mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
         if (!Strings.isNullOrEmpty(headerString)) {
             TypeReference<HashMap<String, String>> typeReference = new TypeReference<HashMap<String, String>>() {
             };
             try {
-                this.headers = getMapper().readValue(headerString, typeReference);
+                this.headers = mapper.readValue(headerString, typeReference);
             } catch (Exception e) {
                 log.error("Error while converting headers", e);
                 throw new InitializationException();
@@ -283,12 +280,12 @@ public class HttpWriter extends StreamingProcessor {
         try {
             AuthConfiguration authConfiguration = null;
             if (authEnabled) {
-                authConfiguration = getMapper().readValue(ComponentPropertyReader.readString(properties,
+                authConfiguration = mapper.readValue(ComponentPropertyReader.readString(properties,
                     globalProperties, "auth_configuration", instanceId, componentMetadata), AuthConfiguration.class);
             }
             start(authConfiguration, authEnabled);
         } catch (Exception e) {
-            log.error("Unable to start the httpclient - {}", e);
+            log.error("Unable to start the httpclient", e);
             throw new InitializationException();
         }
 
@@ -303,29 +300,32 @@ public class HttpWriter extends StreamingProcessor {
      * @param httpMethodType the http method type
      * @return req
      */
-    private Map<String, Object> createResponseMap(Event event, CloseableHttpResponse response, String httpMethodType)
-            throws IOException {
+    private Map<String, Object> createResponseMap(
+            ObjectMapper mapper, Event event,
+            CloseableHttpResponse response, String httpMethodType) throws IOException {
         return ImmutableMap.of("SourceEvent", event.getJsonNode(), "HttpMethod", httpMethodType, "HttpResponseCode",
-                response.getStatusLine().getStatusCode(), "HttpResponse", getResponseAsJson(response));
+                response.getStatusLine().getStatusCode(), "HttpResponse", getResponseAsJson(mapper, response));
     }
 
-    private JsonNode getResponseAsJson(CloseableHttpResponse response) throws IOException {
+    private JsonNode getResponseAsJson(ObjectMapper mapper, CloseableHttpResponse response) throws IOException {
         try {
             if (null != response) {
                 final HttpEntity entity = response.getEntity();
                 if (null != entity) {
                     final String responseStr = EntityUtils.toString(entity);
                     try {
-                        return (!Strings.isNullOrEmpty(responseStr)) ? getMapper().readTree(responseStr) : null;
+                        return (!Strings.isNullOrEmpty(responseStr))
+                                ? mapper.readTree(responseStr)
+                                : mapper.createObjectNode();
                     } catch (final Exception e) {
-                        return getMapper().createObjectNode().put("Response", responseStr);
+                        return mapper.createObjectNode().put("Response", responseStr);
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("Exception while parsing the response - {}", e);
+            log.error("Exception while parsing the response", e);
         }
-        return getMapper().createObjectNode();
+        return mapper.createObjectNode();
     }
 
     @Override
@@ -333,7 +333,7 @@ public class HttpWriter extends StreamingProcessor {
         try {
             stop();
         } catch (Exception e) {
-            log.error("Error while closing the connection - {}", e);
+            log.error("Error while closing the connection", e);
         }
     }
 

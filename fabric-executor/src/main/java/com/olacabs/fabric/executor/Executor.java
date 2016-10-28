@@ -24,7 +24,6 @@ import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.sps.metrics.OpenTsdbReporter;
 import com.github.sps.metrics.opentsdb.OpenTsdb;
@@ -42,6 +41,7 @@ import com.olacabs.fabric.model.common.ComponentSource;
 import com.olacabs.fabric.model.computation.ComputationSpec;
 import io.undertow.Undertow;
 import io.undertow.util.Headers;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -49,8 +49,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.Inet4Address;
 import java.util.Collection;
@@ -59,25 +57,17 @@ import java.util.concurrent.TimeUnit;
 /**
  * TODO doc.
  */
+@Slf4j
 public class Executor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Executor.class);
-
     static {
         java.security.Security.setProperty("networkaddress.cache.ttl", "60");
     }
 
     private final MesosDnsResolver dnsResolver;
 
-    private final ObjectMapper objectMapper;
-
     private Undertow healthcheckMonitor;
 
     public Executor() {
-        objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-
         dnsResolver = new MesosDnsResolver();
     }
 
@@ -85,7 +75,7 @@ public class Executor {
         try {
             new Executor().run(args);
         } catch (Throwable t) {
-            LOGGER.error("Executor will exit...", t);
+            log.error("Executor will exit...", t);
         }
     }
 
@@ -151,12 +141,12 @@ public class Executor {
                         opentsdbPort = Integer.valueOf(tokens[1]);
                     }
                 }
-                LOGGER.info("Setting opentsdb endpoint to {}:{}", opentsdbHost, opentsdbPort);
+                log.info("Setting opentsdb endpoint to {}:{}", opentsdbHost, opentsdbPort);
             }
         }
 
         if (Strings.isNullOrEmpty(opentsdbHost)) {
-            LOGGER.warn("No metrics data available");
+            log.warn("No metrics data available");
         }
 
         MetricRegistry registry = SharedMetricRegistries.getOrCreate("metrics-registry");
@@ -168,13 +158,13 @@ public class Executor {
         spec.getProcessors()
                 .forEach(processorMeta -> componentSourceSetBuilder.add(processorMeta.getMeta().getSource()));
         Collection<String> resolvedUrls = ComponentUrlResolver.urls(componentSourceSetBuilder.build());
-        LOGGER.info("Component Jar URLs: {}", resolvedUrls);
+        log.info("Component Jar URLs: {}", resolvedUrls);
 
         loader.loadJars(resolvedUrls, Thread.currentThread().getContextClassLoader());
 
         Linker linker = new Linker(loader, registry);
 
-        LOGGER.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(spec));
+        log.info("Spec: {}", spec);
         ComputationPipeline pipeline = linker.build(spec);
 
         String host;
@@ -183,7 +173,7 @@ public class Executor {
         } else {
             host = Inet4Address.getLocalHost().getHostAddress();
         }
-        LOGGER.info("Setting container host to: " + host);
+        log.info("Setting container host to: " + host);
 
         boolean metricsDisabled = true;
         if (commandLine.hasOption("d")) {
@@ -206,7 +196,7 @@ public class Executor {
                     .build(OpenTsdb.forService(String.format("http://%s:%d", opentsdbHost, opentsdbPort)).create())
                     .start(interval, TimeUnit.SECONDS);
             } else {
-                LOGGER.warn("Using console reporter");
+                log.warn("Using console reporter");
                 ConsoleReporter.forRegistry(registry)
                     .convertDurationsTo(TimeUnit.MILLISECONDS)
                     .convertRatesTo(TimeUnit.SECONDS)
@@ -215,27 +205,28 @@ public class Executor {
                     .start(60L, TimeUnit.SECONDS);
             }
         } else {
-            LOGGER.warn("Metrics disabled...");
+            log.warn("Metrics disabled...");
         }
 
         try {
             pipeline.initialize(spec.getProperties())
                 .start();
         } catch (Throwable t) {
-            LOGGER.error("Couldn't start computation...", t);
+            log.error("Couldn't start computation...", t);
             System.exit(-1);
         }
 
         startMonitor(pipeline);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.info("Got shutdown signal, shutting down the computation");
+            log.info("Got shutdown signal, shutting down the computation");
             pipeline.stop();
             stopMonitor();
         }));
     }
 
     private MetadataSource metadataSource(CommandLine commandLine) {
+        ObjectMapper objectMapper = new ObjectMapper();
         if (commandLine.hasOption("s")) {
             return new HttpMetadataSource(objectMapper, dnsResolver);
         }

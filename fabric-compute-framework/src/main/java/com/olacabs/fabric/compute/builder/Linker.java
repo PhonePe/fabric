@@ -57,17 +57,16 @@ public class Linker {
     }
 
     public ComputationPipeline build(ComputationSpec spec) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         final NotificationBus notificationBus = new NotificationBus(spec.getProperties());
-        final ProcessingContext processingContext = new ProcessingContext();
-        processingContext.setTopologyName(spec.getName());
+        final ProcessingContext processingContext = new ProcessingContext(spec.getName(), objectMapper);
         ComputationPipeline pipeline = ComputationPipeline.builder();
         pipeline.notificationBus(notificationBus);
         pipeline.computationName(spec.getName());
         Map<String, PipelineStreamSource> sources = Maps.newHashMap();
         Map<String, PipelineStage> stages = Maps.newHashMap();
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         spec.getSources().forEach(sourceMetadata -> {
             final ComponentMetadata meta = sourceMetadata.getMeta();
             PipelineSource source = null;

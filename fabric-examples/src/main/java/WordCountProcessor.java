@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import java.util.*;
-
 import com.google.common.base.Joiner;
 import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.compute.processor.InitializationException;
@@ -26,6 +24,12 @@ import com.olacabs.fabric.model.event.Event;
 import com.olacabs.fabric.model.event.EventSet;
 import com.olacabs.fabric.model.processor.Processor;
 import com.olacabs.fabric.model.processor.ProcessorType;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 
 /**

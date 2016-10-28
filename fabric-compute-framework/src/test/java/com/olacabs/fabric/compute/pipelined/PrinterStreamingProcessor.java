@@ -16,9 +16,7 @@
 
 package com.olacabs.fabric.compute.pipelined;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.compute.processor.InitializationException;
 import com.olacabs.fabric.compute.processor.ProcessingException;
@@ -32,14 +30,10 @@ import java.util.Properties;
  * TODO doc.
  */
 public class PrinterStreamingProcessor extends StreamingProcessor {
-    private ObjectMapper objectMapper;
 
     @Override
     public void initialize(String instanceId, Properties globalProperties, Properties initializationProperties,
                            ComponentMetadata componentMetadata) throws InitializationException {
-        objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
     }
 
     @Override
@@ -49,7 +43,7 @@ public class PrinterStreamingProcessor extends StreamingProcessor {
         }*/
         System.out.println("********");
         try {
-            System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(eventSet));
+            System.out.println(context.getMapper().writerWithDefaultPrettyPrinter().writeValueAsString(eventSet));
             System.out.flush();
         } catch (JsonProcessingException e) {
             e.printStackTrace();

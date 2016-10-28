@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.compute.source.PipelineSource;
 import com.olacabs.fabric.compute.util.ComponentPropertyReader;
@@ -24,6 +21,13 @@ import com.olacabs.fabric.model.common.ComponentMetadata;
 import com.olacabs.fabric.model.event.Event;
 import com.olacabs.fabric.model.event.RawEventBundle;
 import com.olacabs.fabric.model.source.Source;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 
 /**

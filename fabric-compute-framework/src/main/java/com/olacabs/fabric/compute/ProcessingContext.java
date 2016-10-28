@@ -16,21 +16,18 @@
 
 package com.olacabs.fabric.compute;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 /**
- * TODO javadoc.
+ * Context passed to all processors during processing.
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProcessingContext {
-    private String topologyName;
-    private Map<String, Object> cache;
+    private final Map<String, Object> cache = Maps.newConcurrentMap();
+    private final String topologyName;
+    private final ObjectMapper mapper;
 }

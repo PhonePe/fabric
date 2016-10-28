@@ -16,6 +16,7 @@
 
 package com.olacabs.fabric.compute.sources.kafka;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.model.common.ComponentMetadata;
 import com.olacabs.fabric.model.common.ComponentType;
@@ -41,7 +42,7 @@ public class KafkaSourceTest {
         properties.setProperty("source.test_source.zookeeper", "localhost");
         kafkaSource.initialize("test_source", properties,
             new Properties(),
-            ProcessingContext.builder().topologyName("test").build(),
+            new ProcessingContext("test-topology", new ObjectMapper()),
             ComponentMetadata.builder().id("test_source").type(ComponentType.SOURCE).build());
         AtomicLong ctr = new AtomicLong();
         while (true) {

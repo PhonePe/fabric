@@ -62,8 +62,6 @@ import java.util.stream.Collectors;
 public class JsonFilter extends StreamingProcessor {
     private Expression expression;
     private boolean parseEvent = false;
-    private ObjectMapper mapper;
-
 
     @Override
     protected EventSet consume(ProcessingContext processingContext, EventSet eventSet) throws ProcessingException {
@@ -81,7 +79,7 @@ public class JsonFilter extends StreamingProcessor {
                             if (data instanceof byte[]) {
                                 final byte[] rawData = (byte[])data;
                                 try {
-                                    node = mapper.readTree(rawData);
+                                    node = processingContext.getMapper().readTree(rawData);
                                 } catch (IOException e) {
                                     log.error("Could not deserialize byte array to json node. This will not match.", e);
                                     return false;
@@ -112,7 +110,6 @@ public class JsonFilter extends StreamingProcessor {
             Properties properties,
             ComponentMetadata componentMetadata) throws InitializationException {
 
-        mapper = new ObjectMapper(); //TODO Change when #2 is fixed
         final String rule = PropertyReader.readString(properties, globalProperties, "rule");
 
         log.info("Rule: {}", rule);
@@ -126,7 +123,7 @@ public class JsonFilter extends StreamingProcessor {
                     + "Make sure this is enabled at topology level");
         }
         try {
-            expression = mapper.readValue(rule, Expression.class);
+            expression = new ObjectMapper().readValue(rule, Expression.class);
         } catch (IOException e) {
             throw new InitializationException("Failed to parse rule: " + rule, e);
         }

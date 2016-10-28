@@ -16,7 +16,6 @@
 
 package com.olacabs.fabric;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.olacabs.fabric.common.Document;
 import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.compute.processor.InitializationException;
@@ -49,8 +48,6 @@ import java.util.Properties;
 )
 public class SampleStreamingProcessor extends StreamingProcessor {
 
-    private ObjectMapper mapper;
-
     /**
      * Variables to hold the properties defined in the annotation
      */
@@ -74,7 +71,6 @@ public class SampleStreamingProcessor extends StreamingProcessor {
          this method is called once while start of a topology.
          hence all init calls must happen in this section
          **/
-        this.mapper = new ObjectMapper();
     }
 
     /**

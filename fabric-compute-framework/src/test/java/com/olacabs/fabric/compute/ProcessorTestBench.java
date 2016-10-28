@@ -22,6 +22,7 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.SharedMetricRegistries;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -124,8 +125,7 @@ public class ProcessorTestBench {
         Preconditions.checkArgument(pulseDelay > 0, "Please provide a positive pulse delay");
         Preconditions.checkArgument(numPulses > 0, "Please provide a proper number of pulses to be dilvered");
 
-        ProcessingContext processingContext = ProcessingContext.builder()
-            .build();
+        ProcessingContext processingContext = new ProcessingContext("test-topology", new ObjectMapper());
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         AtomicLong numGeneratedPulses = new AtomicLong(0);
         ImmutableList.Builder<EventSet> listBuilder = ImmutableList.builder();
@@ -165,8 +165,7 @@ public class ProcessorTestBench {
         Preconditions.checkArgument(!incomingEvents.isEmpty(),
                 "Please provide events to be sent to the processor.consume() method");
 
-        ProcessingContext processingContext = ProcessingContext.builder()
-            .build();
+        ProcessingContext processingContext = new ProcessingContext("test-topology", new ObjectMapper());
         ImmutableList.Builder<EventSet> listBuilder = ImmutableList.builder();
         EventCollector eventCollector = new EventCollector(processingContext);
         for (EventSet eventSet : incomingEvents) {
@@ -193,8 +192,7 @@ public class ProcessorTestBench {
                 "Please provide events to be sent to the processor.consume() method");
 
         startReporter();
-        ProcessingContext processingContext = ProcessingContext.builder()
-            .build();
+        ProcessingContext processingContext = new ProcessingContext("test-topology", new ObjectMapper());
         EventCollector eventCollector = new EventCollector(processingContext);
         for (int i = 0; i < n; i++) {
             for (EventSet eventSet : incomingEvents) {
@@ -221,8 +219,7 @@ public class ProcessorTestBench {
         Preconditions.checkNotNull(queue, "Queue cannot be null");
 
         startReporter();
-        ProcessingContext processingContext = ProcessingContext.builder()
-            .build();
+        ProcessingContext processingContext = new ProcessingContext("test-topology", new ObjectMapper());
         EventCollector eventCollector = new EventCollector(processingContext);
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();

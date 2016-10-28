@@ -16,7 +16,6 @@
 
 package com.olacabs.fabric;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.olacabs.fabric.common.Document;
 import com.olacabs.fabric.compute.ProcessingContext;
@@ -52,8 +51,6 @@ import java.util.Properties;
 )
 public class SampleScheduledProcessor extends ScheduledProcessor {
 
-    private ObjectMapper mapper;
-
     /* Variables to hold the properties defined in the annotation */
     private String sampleSenderName;
     private boolean sampleBool;
@@ -77,8 +74,6 @@ public class SampleScheduledProcessor extends ScheduledProcessor {
          this method is called once while start of a topology.
          hence all init calls must happen in this section
          **/
-        this.mapper = new ObjectMapper();
-
     }
 
 
