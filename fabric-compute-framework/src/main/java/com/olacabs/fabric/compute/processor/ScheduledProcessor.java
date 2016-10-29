@@ -35,8 +35,8 @@ public abstract class ScheduledProcessor extends ProcessorBase {
     @Override
     public final void process(ProcessingContext context, EventCollector eventCollector, EventSet eventSet)
             throws ProcessingException {
-        MDC.put("id", getId());
+        MDC.put("componentId", getId());
         consume(context, eventSet);
-        MDC.remove("id");
+        MDC.remove("componentId");
     }
 }

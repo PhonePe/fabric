@@ -125,7 +125,7 @@ public class PipelineStreamSource implements MessageSource {
 
     @Timed(name = "${this.instanceId}.acks")
     public synchronized void ackMessage(EventSet eventSet) {
-        MDC.put("id", instanceId);
+        MDC.put("componentId", instanceId);
         if (!messages.containsKey(eventSet.getId())) {
             log.error("Event set {} has already been acked. Maybe the topology is weird!!", eventSet.getId());
             return;
@@ -148,18 +148,18 @@ public class PipelineStreamSource implements MessageSource {
             .transactionId(eventSet.getTransactionId())
             .meta(minMessage.getMeta())
             .build());
-        MDC.remove("id");
+        MDC.remove("componentId");
     }
 
     public void start() {
         generatorFuture = executorService.submit(() -> {
-            MDC.put("id", instanceId);
+            MDC.put("componentId", instanceId);
             try {
                 generateMessage();
             } catch (Exception e) {
                 log.error("Error thrown by source while generating message: ", e);
             }
-            MDC.remove("id");
+            MDC.remove("componentId");
             return null;
         });
     }
@@ -177,7 +177,7 @@ public class PipelineStreamSource implements MessageSource {
     }
 
     public void generateMessage() throws InterruptedException {
-        MDC.put("id", instanceId);
+        MDC.put("componentId", instanceId);
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 RawEventBundle eventBundle = generator();
@@ -217,7 +217,7 @@ public class PipelineStreamSource implements MessageSource {
                 log.error("Blocked exception while reading message: ", e);
             }
         }
-        MDC.remove("id");
+        MDC.remove("componentId");
     }
 
     public boolean healthcheck() {

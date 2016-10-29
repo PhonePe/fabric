@@ -41,16 +41,16 @@ public abstract class StreamingProcessor extends ProcessorBase {
     @Override
     public void process(ProcessingContext context, EventCollector eventCollector, EventSet eventSet)
             throws ProcessingException {
-        MDC.put("id", getId());
+        MDC.put("componentId", getId());
         eventCollector.publish(consume(context, eventSet));
-        MDC.remove("id");
+        MDC.remove("componentId");
     }
 
     @Override
     public final List<Event> timeTriggerHandler(ProcessingContext context) {
-        MDC.put("id", getId());
+        MDC.put("componentId", getId());
         log.warn("timeTriggerHandler() called on StreamingProcessor");
-        MDC.remove("id");
+        MDC.remove("componentId");
         return Collections.emptyList();
     }
 }

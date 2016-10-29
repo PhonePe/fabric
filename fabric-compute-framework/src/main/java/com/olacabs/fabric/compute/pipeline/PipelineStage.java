@@ -142,7 +142,7 @@ public class PipelineStage implements CommsMessageHandler<PipelineMessage>, Mess
 
     private void handleTimerMessage(final PipelineMessage pipelineMessage) throws ProcessingException {
         try {
-            MDC.put("id", processor.getId());
+            MDC.put("componentId", processor.getId());
             retryer.call(() -> {
                 try {
                     List<Event> events = processor.timeTriggerHandler(context);
@@ -170,7 +170,7 @@ public class PipelineStage implements CommsMessageHandler<PipelineMessage>, Mess
                 log.error("Error executing <timeTriggerHandler()>", e);
             }
         } finally {
-            MDC.remove("id");
+            MDC.remove("componentId");
         }
     }
 
@@ -179,7 +179,7 @@ public class PipelineStage implements CommsMessageHandler<PipelineMessage>, Mess
         PipelineMessage messageToSend = pipelineMessage;
         EventCollector eventCollector = new EventCollector();
         try {
-            MDC.put("id", processor.getId());
+            MDC.put("componentId", processor.getId());
             PipelineMessage generatedMessage = retryer.call(() -> {
                 try {
                     processor.process(context, eventCollector, pipelineMessage.getMessages());
@@ -217,7 +217,7 @@ public class PipelineStage implements CommsMessageHandler<PipelineMessage>, Mess
             }
         } finally {
             notificationBus.publish(messageToSend, id, !processor.isScheduled());
-            MDC.remove("id");
+            MDC.remove("componentId");
         }
     }
 
