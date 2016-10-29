@@ -21,6 +21,7 @@ import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.model.event.Event;
 import com.olacabs.fabric.model.event.EventSet;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,13 +41,16 @@ public abstract class StreamingProcessor extends ProcessorBase {
     @Override
     public void process(ProcessingContext context, EventCollector eventCollector, EventSet eventSet)
             throws ProcessingException {
+        MDC.put("id", getId());
         eventCollector.publish(consume(context, eventSet));
-        //context.acknowledge(getId(), eventSet);
+        MDC.remove("id");
     }
 
     @Override
     public final List<Event> timeTriggerHandler(ProcessingContext context) {
-        log.warn("timeTriggerHandler() called on StreamingProcessor: " + getId());
+        MDC.put("id", getId());
+        log.warn("timeTriggerHandler() called on StreamingProcessor");
+        MDC.remove("id");
         return Collections.emptyList();
     }
 }

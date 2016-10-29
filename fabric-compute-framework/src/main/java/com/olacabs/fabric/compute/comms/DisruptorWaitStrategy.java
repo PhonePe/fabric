@@ -17,7 +17,7 @@
 package com.olacabs.fabric.compute.comms;
 
 /**
- * TODO javadoc.
+ * Different waiting strategies that could be used with the {@link com.lmax.disruptor.dsl.Disruptor}.
  */
 public enum DisruptorWaitStrategy {
     BLOCK,

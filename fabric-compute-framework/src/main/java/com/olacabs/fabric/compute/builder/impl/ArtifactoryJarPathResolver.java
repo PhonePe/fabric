@@ -18,10 +18,9 @@ package com.olacabs.fabric.compute.builder.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import lombok.extern.slf4j.Slf4j;
 import org.jfrog.artifactory.client.Artifactory;
 import org.jfrog.artifactory.client.ArtifactoryClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -32,14 +31,14 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 
 /**
- * TODO javadoc.
+ * Resolves Artifactory URLs for component JARs based on maven groupId, artifactId and version.
  */
+@Slf4j
 public final class ArtifactoryJarPathResolver {
 
     private ArtifactoryJarPathResolver() {
 
     }
-    private static final Logger LOGGER = LoggerFactory.getLogger(ArtifactoryJarPathResolver.class);
 
     public static String resolve(final String artifactoryUrl, final String groupId, final String artifactId,
             final String version) throws Exception {
@@ -48,15 +47,15 @@ public final class ArtifactoryJarPathResolver {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(artifactId), "Artifact Id cannot be null");
         Preconditions.checkArgument(!Strings.isNullOrEmpty(version), "Artifact version cannot be null");
         boolean isSnapshot = version.contains("SNAPSHOT");
-        LOGGER.info("Artifact is snapshot: {}", isSnapshot);
+        log.info("Artifact is snapshot: {}", isSnapshot);
         final String repoName = isSnapshot ? "libs-snapshot-local" : "libs-release-local";
 
         Artifactory client = ArtifactoryClient.create(artifactoryUrl);
-        LOGGER.info("Aritifactory client created successfully with uri {}", client.getUri());
+        log.info("Aritifactory client created successfully with uri {}", client.getUri());
         FileAttribute<Set<PosixFilePermission>> perms =
                 PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxr-xr-x"));
         java.nio.file.Path tempFilePath = Files.createTempFile(Long.toString(System.currentTimeMillis()), "xml", perms);
-        String metadataStr = null;
+        String metadataStr;
         if (isSnapshot) {
             metadataStr =
                     String.format("%s/%s/%s/maven-metadata.xml", groupId.replaceAll("\\.", "/"), artifactId, version);
@@ -64,16 +63,16 @@ public final class ArtifactoryJarPathResolver {
             metadataStr = String.format("%s/%s/maven-metadata.xml", groupId.replaceAll("\\.", "/"), artifactId);
         }
 
-        LOGGER.info("Repo-name - {}, metadataStr - {}", repoName, metadataStr);
+        log.info("Repo-name - {}, metadataStr - {}", repoName, metadataStr);
         InputStream response = client.repository(repoName).download(metadataStr).doDownload();
-        LOGGER.info("download complete");
+        log.info("download complete");
         Files.copy(response, tempFilePath, StandardCopyOption.REPLACE_EXISTING);
-        LOGGER.info("Metadata file downloaded to: {}", tempFilePath.toAbsolutePath().toString());
+        log.info("Metadata file downloaded to: {}", tempFilePath.toAbsolutePath().toString());
 
         final String url =
                 String.format("%s/%s/%s/%s/%s/%s-%s.jar", artifactoryUrl, repoName, groupId.replaceAll("\\.", "/"),
                         artifactId, version, artifactId, version);
-        LOGGER.info("Jar will be downloaded from: " + url);
+        log.info("Jar will be downloaded from: " + url);
         return url;
     }
 

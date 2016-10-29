@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * TODO javadoc.
+ * File based downloader which downloads JARs from File URLs. Implements {@link JarDownloader}.
  */
 public class FileJarDownloader implements JarDownloader {
 

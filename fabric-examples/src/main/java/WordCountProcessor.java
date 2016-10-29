@@ -24,6 +24,7 @@ import com.olacabs.fabric.model.event.Event;
 import com.olacabs.fabric.model.event.EventSet;
 import com.olacabs.fabric.model.processor.Processor;
 import com.olacabs.fabric.model.processor.ProcessorType;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import java.util.Properties;
         requiredProperties = {"triggering_frequency"},
         optionalProperties = {}
     )
+@Slf4j
 public class WordCountProcessor extends ScheduledProcessor {
     private Map<String, Integer> wordCounts = new HashMap<>();
 
@@ -74,11 +76,10 @@ public class WordCountProcessor extends ScheduledProcessor {
     @Override
     public List<Event> timeTriggerHandler(ProcessingContext processingContext) throws ProcessingException {
         // this method will be called after a fixed interval of time, say 5 seconds
-        System.out.println(Joiner.on(",").withKeyValueSeparator("=").join(wordCounts));
+        log.info(Joiner.on(",").withKeyValueSeparator("=").join(wordCounts));
         wordCounts.clear();
         // nothing to send to downstream processors
         return Collections.emptyList();
-
     }
 
     @Override

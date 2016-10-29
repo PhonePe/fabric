@@ -35,9 +35,10 @@ import java.util.Properties;
 public abstract class ProcessorBase {
     @Getter
     private final boolean isScheduled;
+
     @Getter
     @Setter
-    private int id;
+    private String id;
 
     protected ProcessorBase(boolean isScheduled) {
         this.isScheduled = isScheduled;
