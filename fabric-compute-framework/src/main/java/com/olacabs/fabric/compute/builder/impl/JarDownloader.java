@@ -19,7 +19,7 @@ package com.olacabs.fabric.compute.builder.impl;
 import java.nio.file.Path;
 
 /**
- * TODO javadoc.
+ * An interface for URL based jar downloaders.
  */
 public interface JarDownloader {
     Path download(final String url);

@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TODO javadoc.
+ * Downloading Loader which downloads JARs from URLs and loads them in the current class loader's classpath.
  */
 public class DownloadingLoader implements Loader {
     private static final Comparator<ComponentMetadata> METADATA_COMPARATOR
@@ -41,7 +41,6 @@ public class DownloadingLoader implements Loader {
     public DownloadingLoader() throws Exception {
         this.jarScanner = new JarScanner();
     }
-
 
     @Override
     public PipelineSource loadSource(ComponentMetadata source) {
@@ -75,6 +74,7 @@ public class DownloadingLoader implements Loader {
                 try {
                     ProcessorBase processorInstance =
                             (ProcessorBase) scanResult.getComponentClass().getDeclaredConstructor().newInstance();
+
                     registeredProcessors.put(scanResult.getMetadata(), processorInstance);
                 } catch (Exception e) {
                     throw new RuntimeException("Error creating processor: ", e);

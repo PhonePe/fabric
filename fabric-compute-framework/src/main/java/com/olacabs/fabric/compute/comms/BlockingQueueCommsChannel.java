@@ -24,8 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- *
- * TODO add javadoc.
+ * {@link LinkedBlockingQueue} based communication channel between components.
  */
 @Slf4j
 public class BlockingQueueCommsChannel<E> implements CommsChannel<E> {

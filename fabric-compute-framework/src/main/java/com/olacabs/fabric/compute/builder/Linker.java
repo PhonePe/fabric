@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * TODO javadoc.
+ * Linker is responsible for linking the components together based on connections in the spec.
  */
 public class Linker {
     private static final Logger LOGGER = LoggerFactory.getLogger(Linker.class);
@@ -56,17 +56,21 @@ public class Linker {
         this.metricRegistry = metricRegistry;
     }
 
+    // TODO MODULARIZE THIS METHOD
     public ComputationPipeline build(ComputationSpec spec) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         final NotificationBus notificationBus = new NotificationBus(spec.getProperties());
         final ProcessingContext processingContext = new ProcessingContext(spec.getName(), objectMapper);
+
         ComputationPipeline pipeline = ComputationPipeline.builder();
         pipeline.notificationBus(notificationBus);
         pipeline.computationName(spec.getName());
         Map<String, PipelineStreamSource> sources = Maps.newHashMap();
         Map<String, PipelineStage> stages = Maps.newHashMap();
+
         spec.getSources().forEach(sourceMetadata -> {
             final ComponentMetadata meta = sourceMetadata.getMeta();
             PipelineSource source = null;
@@ -96,6 +100,7 @@ public class Linker {
             pipeline.addSource(sourceStage);
             sources.put(sourceMetadata.getId(), sourceStage);
         });
+
         spec.getProcessors().forEach(processorMetadata -> {
             final ComponentMetadata meta = processorMetadata.getMeta();
             ProcessorBase processorBase = null;
@@ -121,9 +126,11 @@ public class Linker {
                 .processor(processorBase)
                 .context(processingContext)
                 .build();
+            processorBase.setId(processorMetadata.getId());
             pipeline.addPipelineStage(stage);
             stages.put(processorMetadata.getId(), stage);
         });
+
         spec.getConnections().forEach(connection -> {
             switch (connection.getFromType()) {
                 case SOURCE:

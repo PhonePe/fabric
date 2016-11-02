@@ -87,12 +87,12 @@ public class NotificationBus {
      * {@link com.olacabs.fabric.compute.processor.ScheduledProcessor}, it will not be forwarded to the next components.
      * This is because the
      * {@link com.olacabs.fabric.compute.processor.ScheduledProcessor#consume(ProcessingContext, EventSet)}
-     * method does not return an eventset. If not other component is connected to the publisher, the message will be
+     * method does not return an eventset. If no other component is connected to the publisher, the message will be
      * acked.
      *
      * @param message The message to be published
      * @param from The component that is publishing the message
-     * @param forward If the message will be dlivered to downstream components
+     * @param forward If the message will be delivered to downstream components
      */
     public synchronized void publish(PipelineMessage message, int from, boolean forward) {
         switch (message.getMessageType()) {

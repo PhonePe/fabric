@@ -19,6 +19,7 @@ package com.olacabs.fabric.compute.processor;
 import com.olacabs.fabric.compute.EventCollector;
 import com.olacabs.fabric.compute.ProcessingContext;
 import com.olacabs.fabric.model.event.EventSet;
+import org.jboss.logging.MDC;
 
 /**
  * TODO javadoc.
@@ -34,16 +35,8 @@ public abstract class ScheduledProcessor extends ProcessorBase {
     @Override
     public final void process(ProcessingContext context, EventCollector eventCollector, EventSet eventSet)
             throws ProcessingException {
-        /*if(eventSet.getType() == EventSet.Type.USER) {
-            consume(context, eventSet);
-            //eventCollector.publish(eventSet);
-            context.acknowledge(getId(), eventSet);
-        }
-        else {
-            EventSet generatedEventSet = timeTriggerHandler(context);
-            generatedEventSet.setAggregate(true);
-            eventCollector.publish(generatedEventSet);
-        }*/ //PIPELINE
+        MDC.put("componentId", getId());
         consume(context, eventSet);
+        MDC.remove("componentId");
     }
 }

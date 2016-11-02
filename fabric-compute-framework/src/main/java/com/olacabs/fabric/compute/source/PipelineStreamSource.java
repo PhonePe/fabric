@@ -21,9 +21,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.WaitStrategies;
 import com.google.common.collect.Maps;
 import com.olacabs.fabric.common.util.PropertyReader;
 import com.olacabs.fabric.compute.ProcessingContext;
@@ -39,8 +36,8 @@ import com.olacabs.fabric.model.event.RawEventBundle;
 import io.astefanutti.metrics.aspectj.Metrics;
 import lombok.Builder;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 
 import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
@@ -48,7 +45,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -56,10 +52,9 @@ import static com.codahale.metrics.MetricRegistry.name;
  * TODO doc.
  */
 @Metrics
+@Slf4j
 public class PipelineStreamSource implements MessageSource {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PipelineStreamSource.class);
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-
 
     private final int id = CommsIdGenerator.nextId();
     @Getter
@@ -76,12 +71,6 @@ public class PipelineStreamSource implements MessageSource {
     private final ProcessingContext processingContext;
     private final ObjectMapper objectMapper;
     private final Histogram batchSizeHistogram;
-
-    private final Retryer<PipelineMessage> retryer = RetryerBuilder.<PipelineMessage>newBuilder()
-        .retryIfException()
-        .retryIfRuntimeException()
-        .withWaitStrategy(WaitStrategies.fibonacciWait(30, TimeUnit.SECONDS))
-        .build();
 
     private LinkedBlockingQueue<EventSet> delivered;
     private ConcurrentMap<Long, EventSet> messages;
@@ -135,24 +124,23 @@ public class PipelineStreamSource implements MessageSource {
     }
 
     @Timed(name = "${this.instanceId}.acks")
-     public synchronized void ackMessage(EventSet eventSet) {
+    public synchronized void ackMessage(EventSet eventSet) {
+        MDC.put("componentId", instanceId);
         if (!messages.containsKey(eventSet.getId())) {
-            LOGGER.error("[{}] Event set {} has already been acked. Maybe the topology is weird!!",
-                    sourceMetadata.getName(), eventSet.getId());
+            log.error("Event set {} has already been acked. Maybe the topology is weird!!", eventSet.getId());
             return;
         }
         EventSet minMessage = delivered.peek();
         if (null == minMessage) {
-            LOGGER.error("[{}] There are no unacked message!! This is impossible!!", sourceMetadata.getName());
+            log.error("There are no unacked messages!! This is impossible!!");
             return;
         }
         if (minMessage.getId() != eventSet.getId()) {
-            LOGGER.error("[{}] Got an out of bound message. Acceptable: {} Got: {}", sourceMetadata.getName(),
-                    minMessage.getId(), eventSet.getId());
+            log.error("Got an out of bound message. Acceptable: {} Got: {}", minMessage.getId(), eventSet.getId());
             return;
         }
         minMessage = delivered.poll();
-        LOGGER.debug("Acked messageset: {} Partition id: {}", minMessage.getId(), minMessage.getPartitionId());
+        log.debug("Acked message set: {} Partition id: {}", minMessage.getId(), minMessage.getPartitionId());
         messages.remove(eventSet.getId());
         source.ack(RawEventBundle.builder()
             .events(minMessage.getEvents())
@@ -160,15 +148,18 @@ public class PipelineStreamSource implements MessageSource {
             .transactionId(eventSet.getTransactionId())
             .meta(minMessage.getMeta())
             .build());
+        MDC.remove("componentId");
     }
 
     public void start() {
         generatorFuture = executorService.submit(() -> {
+            MDC.put("componentId", instanceId);
             try {
                 generateMessage();
             } catch (Exception e) {
-                LOGGER.error("Error thrown by source while generating message: ", e);
+                log.error("Error thrown by source while generating message: ", e);
             }
+            MDC.remove("componentId");
             return null;
         });
     }
@@ -186,6 +177,7 @@ public class PipelineStreamSource implements MessageSource {
     }
 
     public void generateMessage() throws InterruptedException {
+        MDC.put("componentId", instanceId);
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 RawEventBundle eventBundle = generator();
@@ -200,7 +192,7 @@ public class PipelineStreamSource implements MessageSource {
                                 event.setJsonNode(objectMapper.valueToTree(event.getData()));
                             }
                         } catch (Throwable t) {
-                            LOGGER.error("error generating json payload: ", t);
+                            log.error("Error generating json payload: ", t);
                         }
                     }
                 });
@@ -222,9 +214,10 @@ public class PipelineStreamSource implements MessageSource {
                     id);
 
             } catch (Exception e) {
-                LOGGER.error("Blocked exception while reading message: ", e);
+                log.error("Blocked exception while reading message: ", e);
             }
         }
+        MDC.remove("componentId");
     }
 
     public boolean healthcheck() {

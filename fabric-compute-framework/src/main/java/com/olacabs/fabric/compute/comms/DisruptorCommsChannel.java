@@ -37,7 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- *TODO javadoc.
+ * {@link Disruptor} based communication channel between components.
  */
 @Slf4j
 @Setter

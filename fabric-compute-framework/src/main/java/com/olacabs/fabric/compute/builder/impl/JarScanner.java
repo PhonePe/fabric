@@ -26,13 +26,12 @@ import com.olacabs.fabric.model.processor.Processor;
 import com.olacabs.fabric.model.source.Source;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.conn.UnsupportedSchemeException;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ConfigurationBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URL;
@@ -41,10 +40,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * TODO javadoc.
+ * JarScanner is used to scan the downloaded component JARs and extract annotation metadata about them.
  */
+@Slf4j
 public class JarScanner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DownloadingLoader.class);
     private static final String PROPERTIES_FILE_NAME = "compute.properties";
 
     private Properties properties;
@@ -107,6 +106,14 @@ public class JarScanner {
         return downloadedURLs.toArray(new URL[downloadedURLs.size()]);
     }
 
+    /**
+     * Uses reflection to scan for {@link Processor}s in the downloaded JARs with the given classloader and
+     * create scan results.
+     * @param classLoader the @{link ClassLoader} to be used for scanning the JARs
+     * @param downloadedUrls the URLs for the downloaded JARs
+     * @return a list of {@link ScanResult}
+     * @throws Exception
+     */
     private List<ScanResult> scanForProcessors(ClassLoader classLoader, URL[] downloadedUrls) throws Exception {
         Reflections reflections = new Reflections(new ConfigurationBuilder().addClassLoader(classLoader)
                 .addScanners(new SubTypesScanner(), new TypeAnnotationsScanner()).addUrls(downloadedUrls));
@@ -127,6 +134,14 @@ public class JarScanner {
         }).collect(Collectors.toCollection(ArrayList::new));
     }
 
+    /**
+     * Uses reflection to scan for {@link Source}s in the downloaded JARs with the given classloader and
+     * create scan results.
+     * @param classLoader the @{link ClassLoader} to be used for scanning the JARs
+     * @param downloadedUrls the URLs for the downloaded JARs
+     * @return a list of {@link ScanResult}
+     * @throws Exception
+     */
     private List<ScanResult> scanForSources(ClassLoader classLoader, URL[] downloadedUrls) throws Exception {
         Reflections reflections = new Reflections(new ConfigurationBuilder().addClassLoader(classLoader)
                 .addScanners(new SubTypesScanner(), new TypeAnnotationsScanner()).addUrls(downloadedUrls));
@@ -147,7 +162,8 @@ public class JarScanner {
     }
 
     /**
-     * Scan result class.
+     * Holds information about a particular component (Source or Processor) for instantiating instances of the
+     * component.
      */
     @Builder @Data public static class ScanResult {
         private ComponentMetadata metadata;
